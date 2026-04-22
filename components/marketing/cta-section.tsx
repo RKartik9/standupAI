@@ -3,17 +3,25 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useClerk } from "@clerk/nextjs";
 
 export function CTASection() {
+  const { openSignUp } = useClerk();
+
   return (
-    <section style={{ padding: "var(--space-24) 0", borderTop: "1px solid var(--border)" }}>
+    <section
+      style={{
+        padding: "var(--space-24) 0",
+        borderTop: "1px solid var(--border)",
+      }}
+    >
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-[680px] mx-auto text-center"
+          className="mx-auto max-w-[680px] text-center"
         >
           <h2
             style={{
@@ -41,29 +49,29 @@ export function CTASection() {
           </p>
 
           <div className="flex items-center justify-center gap-3">
-            <Link href="/dashboard">
-              <button
-                className="flex items-center justify-center gap-2 transition-all hover:opacity-90"
-                style={{
-                  background: "var(--accent)",
-                  color: "#ffffff",
-                  height: "46px",
-                  padding: "0 24px",
-                  borderRadius: "var(--radius-md)",
-                  fontFamily: "var(--font-display)",
-                  fontSize: "14px",
-                  fontWeight: 400,
-                  border: "none",
-                  letterSpacing: "0.02em",
-                }}
-              >
-                START FREE TODAY
-                <ArrowRight size={16} strokeWidth={2} />
-              </button>
-            </Link>
+            <button
+              onClick={() => openSignUp()}
+              className="flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-[0.98]"
+              style={{
+                background: "var(--accent)",
+                color: "#ffffff",
+                height: "46px",
+                padding: "0 24px",
+                borderRadius: "var(--radius-md)",
+                fontFamily: "var(--font-display)",
+                fontSize: "14px",
+                fontWeight: 400,
+                border: "none",
+                letterSpacing: "0.02em",
+                cursor: "pointer",
+              }}
+            >
+              START FREE TODAY
+              <ArrowRight size={16} strokeWidth={2} />
+            </button>
             <Link href="#features">
               <button
-                className="transition-all hover:bg-[var(--surface-2)] hover:border-[var(--border-3)]"
+                className="transition-all hover:bg-[var(--surface-2)] hover:border-[var(--border-3)] active:scale-[0.98]"
                 style={{
                   background: "transparent",
                   color: "var(--text-primary)",
@@ -75,6 +83,7 @@ export function CTASection() {
                   fontWeight: 400,
                   border: "1px solid var(--border-2)",
                   letterSpacing: "0.02em",
+                  cursor: "pointer",
                 }}
               >
                 LEARN MORE
@@ -83,7 +92,7 @@ export function CTASection() {
           </div>
 
           <div
-            className="flex items-center justify-center gap-4 mt-8"
+            className="mt-8 flex items-center justify-center gap-4"
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "13px",

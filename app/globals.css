@@ -149,6 +149,12 @@ textarea,
   line-height: 1.6;
 }
 
+/* Smooth scroll for anchor links */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 64px;
+}
+
 /* Smooth transitions */
 button,
 a,

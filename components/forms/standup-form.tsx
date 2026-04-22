@@ -3,39 +3,47 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { createUpdate } from "@/lib/actions/updates";
+import {
+  createUpdateSchema,
+  type CreateUpdateInput,
+} from "@/lib/validations/updates";
 
-const standupSchema = z.object({
-  did: z.string().min(1, "Please share what you did").max(500),
-  willDo: z.string().min(1, "Please share what you'll do next").max(500),
-  blockers: z.string().max(500).optional(),
-});
+interface StandupFormProps {
+  teamId: string;
+}
 
-type StandupFormData = z.infer<typeof standupSchema>;
-
-export function StandupForm() {
+export function StandupForm({ teamId }: StandupFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<StandupFormData>({
-    resolver: zodResolver(standupSchema),
+  } = useForm<CreateUpdateInput>({
+    resolver: zodResolver(createUpdateSchema),
   });
 
-  const onSubmit = async (data: StandupFormData) => {
+  const onSubmit = async (data: CreateUpdateInput) => {
     setIsSubmitting(true);
+    setSubmitMessage(null);
     try {
-      console.log("Standup update:", data);
+      const result = await createUpdate(teamId, data);
+      if (result.error) {
+        setSubmitMessage("Failed to post update. Please try again.");
+        return;
+      }
       reset();
-    } catch (error) {
-      console.error("Error submitting update:", error);
+      setSubmitMessage("Update posted!");
+      setTimeout(() => setSubmitMessage(null), 3000);
+    } catch {
+      setSubmitMessage("Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -98,9 +106,14 @@ export function StandupForm() {
           </div>
 
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              Press ⌘ + Enter to submit
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-muted-foreground">
+                Press ⌘ + Enter to submit
+              </p>
+              {submitMessage && (
+                <p className="text-xs text-green-600">{submitMessage}</p>
+              )}
+            </div>
             <Button type="submit" disabled={isSubmitting} size="lg">
               {isSubmitting ? "Posting..." : "Post Update"}
             </Button>

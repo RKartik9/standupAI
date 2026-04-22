@@ -1,55 +1,90 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { UpdateCard } from "./update-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getPusherClient } from "@/lib/pusher/client";
+import type { Update } from "@/lib/db/schema";
 
-const mockUpdates = [
-  {
-    id: "1",
-    userName: "John Doe",
-    did: "Fixed the authentication bug that was preventing users from logging in. Implemented proper error handling and added tests.",
-    willDo: "Start working on the dashboard redesign. Will focus on the sidebar navigation first.",
-    blockers: "Waiting for API documentation from the backend team",
-    createdAt: new Date(Date.now() - 1000 * 60 * 30),
-  },
-  {
-    id: "2",
-    userName: "Jane Smith",
-    did: "Completed the user profile page with all CRUD operations. Added form validation using Zod.",
-    willDo: "Integrate the real-time notifications feature using Pusher. Will pair with John on the dashboard.",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
-  },
-  {
-    id: "3",
-    userName: "Alex Johnson",
-    did: "Set up CI/CD pipeline with GitHub Actions. All tests now run automatically on PR creation.",
-    willDo: "Work on database migration scripts and setup staging environment.",
-    blockers: "Need AWS credentials for staging deployment",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 4),
-  },
-];
+interface UpdatesFeedProps {
+  updates: Update[];
+  teamId: string;
+}
 
-export function UpdatesFeed() {
+export function UpdatesFeed({ updates: initial, teamId }: UpdatesFeedProps) {
+  const [updates, setUpdates] = useState<Update[]>(initial);
+
+  useEffect(() => {
+    setUpdates(initial);
+  }, [initial]);
+
+  useEffect(() => {
+    const pusher = getPusherClient();
+    const channel = pusher.subscribe(`team-${teamId}`);
+
+    channel.bind("new-update", (data: Update) => {
+      setUpdates((prev) => {
+        if (prev.some((u) => u.id === data.id)) return prev;
+        return [data, ...prev];
+      });
+    });
+
+    return () => {
+      channel.unbind_all();
+      pusher.unsubscribe(`team-${teamId}`);
+    };
+  }, [teamId]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Today's Updates</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {mockUpdates.length} updates from your team
+          <h2
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "var(--text-h3)",
+              color: "var(--text-primary)",
+              fontWeight: 400,
+              letterSpacing: "0.02em",
+            }}
+          >
+            TODAY'S UPDATES
+          </h2>
+          <p
+            className="mt-1"
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--text-small)",
+              color: "var(--text-secondary)",
+            }}
+          >
+            {updates.length} update{updates.length !== 1 ? "s" : ""} from
+            your team
           </p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "11px",
+              color: "var(--text-tertiary)",
+            }}
+          >
+            Live
+          </span>
         </div>
       </div>
 
       <div className="space-y-4">
-        {mockUpdates.length > 0 ? (
-          mockUpdates.map((update) => (
+        {updates.length > 0 ? (
+          updates.map((update) => (
             <UpdateCard key={update.id} update={update} />
           ))
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>No Updates Yet</CardTitle>
+              <CardTitle className="text-base">No Updates Yet</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">

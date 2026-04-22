@@ -4,17 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
+import type { Update } from "@/lib/db/schema";
 
 interface UpdateCardProps {
-  update: {
-    id: string;
-    userName: string;
-    userAvatar?: string;
-    did: string;
-    willDo: string;
-    blockers?: string;
-    createdAt: Date;
-  };
+  update: Update;
 }
 
 export function UpdateCard({ update }: UpdateCardProps) {
@@ -26,13 +19,12 @@ export function UpdateCard({ update }: UpdateCardProps) {
     .slice(0, 2);
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="transition-shadow hover:shadow-md">
       <CardContent className="pt-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
+        <div className="mb-4 flex items-start justify-between">
           <div className="flex items-center gap-3">
             <Avatar>
-              <AvatarImage src={update.userAvatar} />
+              <AvatarImage src={update.userImage ?? undefined} />
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div>
@@ -44,17 +36,16 @@ export function UpdateCard({ update }: UpdateCardProps) {
           </div>
         </div>
 
-        {/* Content */}
         <div className="space-y-4">
           <div>
-            <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+            <h4 className="mb-2 text-sm font-semibold text-muted-foreground">
               ✅ Completed
             </h4>
             <p className="text-sm">{update.did}</p>
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+            <h4 className="mb-2 text-sm font-semibold text-muted-foreground">
               🎯 Next Up
             </h4>
             <p className="text-sm">{update.willDo}</p>
@@ -62,7 +53,7 @@ export function UpdateCard({ update }: UpdateCardProps) {
 
           {update.blockers && (
             <div>
-              <h4 className="text-sm font-semibold text-destructive mb-2">
+              <h4 className="mb-2 text-sm font-semibold text-destructive">
                 🚧 Blockers
               </h4>
               <div className="flex gap-2">

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { Hero } from "@/components/marketing/hero";
 import { Features } from "@/components/marketing/features";
 import { HowItWorks } from "@/components/marketing/how-it-works";
@@ -16,29 +16,35 @@ export default function Home() {
           height: "56px",
           background: "rgba(250,250,248,0.85)",
           backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
           borderBottom: "1px solid var(--border)",
         }}
       >
         <div className="container mx-auto flex h-full items-center justify-between px-4">
-          <div
+          <Link
+            href="/"
             style={{
               fontFamily: "Anton",
               fontSize: "15px",
-              fontWeight: 500,
+              fontWeight: 400,
               color: "var(--text-primary)",
+              letterSpacing: "0.02em",
+              textDecoration: "none",
             }}
           >
             STANDUPAI
-          </div>
+          </Link>
+
           <nav className="flex items-center gap-6">
             <Link
               href="#features"
               style={{
                 fontFamily: "Anton",
-                fontSize: "14px",
+                fontSize: "13px",
                 fontWeight: 400,
                 color: "var(--text-secondary)",
                 transition: "color 0.2s",
+                textDecoration: "none",
               }}
               className="hover:text-[var(--text-primary)]"
             >
@@ -48,46 +54,103 @@ export default function Home() {
               href="#how-it-works"
               style={{
                 fontFamily: "Anton",
-                fontSize: "14px",
+                fontSize: "13px",
                 fontWeight: 400,
                 color: "var(--text-secondary)",
                 transition: "color 0.2s",
+                textDecoration: "none",
               }}
               className="hover:text-[var(--text-primary)]"
             >
               HOW IT WORKS
             </Link>
             <Link
-              href="/sign-in"
+              href="#showcase"
               style={{
                 fontFamily: "Anton",
-                fontSize: "14px",
+                fontSize: "13px",
                 fontWeight: 400,
                 color: "var(--text-secondary)",
                 transition: "color 0.2s",
+                textDecoration: "none",
               }}
               className="hover:text-[var(--text-primary)]"
             >
-              SIGN IN
+              PRODUCT
             </Link>
-            <Link href="/dashboard">
-              <button
-                className="transition-all hover:opacity-90"
+
+            {/* Clerk Auth - Signed Out: show Sign In + Get Started */}
+            <Show when="signed-out">
+              <SignInButton mode="modal">
+                <button
+                  style={{
+                    fontFamily: "Anton",
+                    fontSize: "13px",
+                    fontWeight: 400,
+                    color: "var(--text-secondary)",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    letterSpacing: "0.02em",
+                    transition: "color 0.2s",
+                  }}
+                  className="hover:text-[var(--text-primary)]"
+                >
+                  SIGN IN
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button
+                  className="transition-all hover:opacity-90 active:scale-[0.98]"
+                  style={{
+                    background: "var(--accent)",
+                    color: "#ffffff",
+                    height: "34px",
+                    padding: "0 16px",
+                    borderRadius: "var(--radius-md)",
+                    fontFamily: "Anton",
+                    fontSize: "13px",
+                    fontWeight: 400,
+                    border: "none",
+                    cursor: "pointer",
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  GET STARTED
+                </button>
+              </SignUpButton>
+            </Show>
+
+            {/* Clerk Auth - Signed In: show Dashboard link + UserButton */}
+            <Show when="signed-in">
+              <Link
+                href="/dashboard"
+                className="transition-all hover:opacity-90 active:scale-[0.98]"
                 style={{
                   background: "var(--accent)",
                   color: "#ffffff",
-                  height: "36px",
+                  height: "34px",
                   padding: "0 16px",
                   borderRadius: "var(--radius-md)",
                   fontFamily: "Anton",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  border: "none",
+                  fontSize: "13px",
+                  fontWeight: 400,
+                  letterSpacing: "0.02em",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
                 }}
               >
-                GET STARTED
-              </button>
-            </Link>
+                DASHBOARD
+              </Link>
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: { width: "30px", height: "30px" },
+                  },
+                }}
+              />
+            </Show>
           </nav>
         </div>
       </header>
@@ -96,17 +159,19 @@ export default function Home() {
       <Hero />
 
       {/* Features */}
-      <div id="features">
+      <section id="features">
         <Features />
-      </div>
+      </section>
 
       {/* How It Works */}
-      <div id="how-it-works">
+      <section id="how-it-works">
         <HowItWorks />
-      </div>
+      </section>
 
       {/* Product Showcase */}
-      <ProductShowcase />
+      <section id="showcase">
+        <ProductShowcase />
+      </section>
 
       {/* CTA */}
       <CTASection />
@@ -122,51 +187,60 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="space-y-3">
-              <div
+              <Link
+                href="/"
                 style={{
                   fontFamily: "Anton",
                   fontSize: "15px",
-                  fontWeight: 500,
+                  fontWeight: 400,
                   color: "var(--text-primary)",
+                  textDecoration: "none",
+                  letterSpacing: "0.02em",
                 }}
               >
                 STANDUPAI
-              </div>
+              </Link>
               <p
                 style={{
-                  fontFamily: "Anton",
+                  fontFamily: "var(--font-body)",
                   fontSize: "var(--text-small)",
                   color: "var(--text-secondary)",
                 }}
               >
-                ASYNC STANDUPS POWERED BY AI
+                Async standups powered by AI.
               </p>
             </div>
             <div>
               <h4
                 style={{
                   fontFamily: "Anton",
-                  fontSize: "var(--text-small)",
-                  fontWeight: 500,
-                  color: "var(--text-primary)",
+                  fontSize: "var(--text-label)",
+                  fontWeight: 400,
+                  color: "var(--text-tertiary)",
                   marginBottom: "12px",
+                  letterSpacing: "0.08em",
                 }}
               >
                 PRODUCT
               </h4>
               <ul className="space-y-2">
-                {["Features", "Pricing", "Integrations"].map((item) => (
-                  <li key={item}>
+                {[
+                  { label: "Features", href: "#features" },
+                  { label: "How It Works", href: "#how-it-works" },
+                  { label: "Product", href: "#showcase" },
+                ].map((item) => (
+                  <li key={item.label}>
                     <Link
-                      href="#"
+                      href={item.href}
                       style={{
-                        fontFamily: "Anton",
+                        fontFamily: "var(--font-body)",
                         fontSize: "var(--text-small)",
                         color: "var(--text-secondary)",
+                        textDecoration: "none",
                       }}
                       className="hover:text-[var(--text-primary)] transition-colors"
                     >
-                      {item.toUpperCase()}
+                      {item.label}
                     </Link>
                   </li>
                 ))}
@@ -176,27 +250,33 @@ export default function Home() {
               <h4
                 style={{
                   fontFamily: "Anton",
-                  fontSize: "var(--text-small)",
-                  fontWeight: 500,
-                  color: "var(--text-primary)",
+                  fontSize: "var(--text-label)",
+                  fontWeight: 400,
+                  color: "var(--text-tertiary)",
                   marginBottom: "12px",
+                  letterSpacing: "0.08em",
                 }}
               >
-                COMPANY
+                ACCOUNT
               </h4>
               <ul className="space-y-2">
-                {["About", "Blog", "Careers"].map((item) => (
-                  <li key={item}>
+                {[
+                  { label: "Sign In", href: "/sign-in" },
+                  { label: "Sign Up", href: "/sign-up" },
+                  { label: "Dashboard", href: "/dashboard" },
+                ].map((item) => (
+                  <li key={item.label}>
                     <Link
-                      href="#"
+                      href={item.href}
                       style={{
-                        fontFamily: "Anton",
+                        fontFamily: "var(--font-body)",
                         fontSize: "var(--text-small)",
                         color: "var(--text-secondary)",
+                        textDecoration: "none",
                       }}
                       className="hover:text-[var(--text-primary)] transition-colors"
                     >
-                      {item.toUpperCase()}
+                      {item.label}
                     </Link>
                   </li>
                 ))}
@@ -206,10 +286,11 @@ export default function Home() {
               <h4
                 style={{
                   fontFamily: "Anton",
-                  fontSize: "var(--text-small)",
-                  fontWeight: 500,
-                  color: "var(--text-primary)",
+                  fontSize: "var(--text-label)",
+                  fontWeight: 400,
+                  color: "var(--text-tertiary)",
                   marginBottom: "12px",
+                  letterSpacing: "0.08em",
                 }}
               >
                 LEGAL
@@ -217,17 +298,16 @@ export default function Home() {
               <ul className="space-y-2">
                 {["Privacy", "Terms", "Security"].map((item) => (
                   <li key={item}>
-                    <Link
-                      href="#"
+                    <span
                       style={{
-                        fontFamily: "Anton",
+                        fontFamily: "var(--font-body)",
                         fontSize: "var(--text-small)",
-                        color: "var(--text-secondary)",
+                        color: "var(--text-tertiary)",
+                        cursor: "default",
                       }}
-                      className="hover:text-[var(--text-primary)] transition-colors"
                     >
-                      {item.toUpperCase()}
-                    </Link>
+                      {item}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -238,12 +318,12 @@ export default function Home() {
             style={{
               borderTop: "1px solid var(--border)",
               paddingTop: "32px",
-              fontFamily: "Anton",
+              fontFamily: "var(--font-body)",
               fontSize: "var(--text-small)",
               color: "var(--text-tertiary)",
             }}
           >
-            <p>&copy; 2026 STANDUPAI. BUILT FOR ASYNC-FIRST TEAMS.</p>
+            <p>&copy; 2026 StandupAI. Built for async-first teams.</p>
           </div>
         </div>
       </footer>

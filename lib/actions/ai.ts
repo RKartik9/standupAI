@@ -1,19 +1,14 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { updates, aiSummaries } from "@/lib/db/schema";
-import { eq, gte, desc } from "drizzle-orm";
-import { and } from "drizzle-orm";
-import OpenAI from "openai";
+import { eq, gte, desc, and } from "drizzle-orm";
+import { AI_MODEL, getOpenAI } from "@/lib/ai/client";
+import { requireOrgMember, requireUser } from "./org-auth";
 
-function getOpenAI() {
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-}
-
-export async function generateSummary(teamId: string) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+export async function generateSummary(organizationId: string) {
+  const userId = await requireUser();
+  await requireOrgMember(organizationId, userId);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -21,7 +16,12 @@ export async function generateSummary(teamId: string) {
   const todayUpdates = await db
     .select()
     .from(updates)
-    .where(and(eq(updates.teamId, teamId), gte(updates.createdAt, today)))
+    .where(
+      and(
+        eq(updates.organizationId, organizationId),
+        gte(updates.createdAt, today),
+      ),
+    )
     .orderBy(desc(updates.createdAt));
 
   if (todayUpdates.length === 0) {
@@ -36,7 +36,7 @@ export async function generateSummary(teamId: string) {
     .join("\n\n");
 
   const completion = await getOpenAI().chat.completions.create({
-    model: "gpt-4o-mini",
+    model: AI_MODEL,
     messages: [
       {
         role: "system",
@@ -69,7 +69,7 @@ Be concise. Each bullet should be one short sentence.`,
   const [saved] = await db
     .insert(aiSummaries)
     .values({
-      teamId,
+      organizationId,
       summary: summaryContent,
       generatedBy: userId,
       date: today,
@@ -79,9 +79,9 @@ Be concise. Each bullet should be one short sentence.`,
   return { data: saved };
 }
 
-export async function getLatestSummary(teamId: string) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+export async function getLatestSummary(organizationId: string) {
+  const userId = await requireUser();
+  await requireOrgMember(organizationId, userId);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -90,7 +90,10 @@ export async function getLatestSummary(teamId: string) {
     .select()
     .from(aiSummaries)
     .where(
-      and(eq(aiSummaries.teamId, teamId), gte(aiSummaries.date, today)),
+      and(
+        eq(aiSummaries.organizationId, organizationId),
+        gte(aiSummaries.date, today),
+      ),
     )
     .orderBy(desc(aiSummaries.createdAt))
     .limit(1);

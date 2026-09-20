@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { joinTeamByCode } from "@/lib/actions/invites";
+import { joinOrganizationByCode } from "@/lib/actions/invites";
 
 interface JoinTeamFormProps {
   code: string;
@@ -26,11 +26,11 @@ export function JoinTeamForm({ code: initialCode }: JoinTeamFormProps) {
     setLoading(true);
     setError(null);
     try {
-      const result = await joinTeamByCode(code.trim());
+      const result = await joinOrganizationByCode(code.trim());
       if (result.error) {
         setError(result.error);
-      } else {
-        router.push("/dashboard");
+      } else if (result.data) {
+        router.push(`/dashboard?orgId=${result.data.organizationId}`);
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -51,7 +51,7 @@ export function JoinTeamForm({ code: initialCode }: JoinTeamFormProps) {
             marginBottom: "12px",
           }}
         >
-          JOIN A TEAM
+          JOIN A WORKSPACE
         </h1>
         <p
           style={{
@@ -60,7 +60,7 @@ export function JoinTeamForm({ code: initialCode }: JoinTeamFormProps) {
             color: "var(--text-secondary)",
           }}
         >
-          Enter the invite code to join your team
+          Enter the invite code your admin shared with you
         </p>
       </div>
 
@@ -76,9 +76,7 @@ export function JoinTeamForm({ code: initialCode }: JoinTeamFormProps) {
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <Button
             className="w-full"
@@ -86,7 +84,7 @@ export function JoinTeamForm({ code: initialCode }: JoinTeamFormProps) {
             onClick={handleJoin}
             disabled={loading}
           >
-            {loading ? "Joining..." : "Join Team"}
+            {loading ? "Joining..." : "Join Workspace"}
           </Button>
         </CardContent>
       </Card>

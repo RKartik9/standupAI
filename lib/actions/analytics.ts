@@ -1,9 +1,9 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { updates, teamMembers } from "@/lib/db/schema";
+import { updates, organizationMembers } from "@/lib/db/schema";
 import { eq, and, gte, desc, sql, count } from "drizzle-orm";
+import { requireOrgMember, requireUser } from "./org-auth";
 
 function toDateKey(d: Date): string {
   const y = d.getFullYear();
@@ -19,9 +19,9 @@ function normalizeKey(val: unknown): string {
   return s;
 }
 
-export async function getTeamAnalytics(teamId: string) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+export async function getOrgAnalytics(organizationId: string) {
+  const userId = await requireUser();
+  await requireOrgMember(organizationId, userId);
 
   const now = new Date();
   const sevenDaysAgo = new Date(now);
@@ -46,7 +46,7 @@ export async function getTeamAnalytics(teamId: string) {
       .from(updates)
       .where(
         and(
-          eq(updates.teamId, teamId),
+          eq(updates.organizationId, organizationId),
           gte(updates.createdAt, sevenDaysAgo),
         ),
       )
@@ -62,7 +62,7 @@ export async function getTeamAnalytics(teamId: string) {
       .from(updates)
       .where(
         and(
-          eq(updates.teamId, teamId),
+          eq(updates.organizationId, organizationId),
           gte(updates.createdAt, thirtyDaysAgo),
         ),
       )
@@ -81,7 +81,7 @@ export async function getTeamAnalytics(teamId: string) {
       .from(updates)
       .where(
         and(
-          eq(updates.teamId, teamId),
+          eq(updates.organizationId, organizationId),
           gte(updates.createdAt, sevenDaysAgo),
         ),
       )
@@ -98,7 +98,7 @@ export async function getTeamAnalytics(teamId: string) {
       .from(updates)
       .where(
         and(
-          eq(updates.teamId, teamId),
+          eq(updates.organizationId, organizationId),
           gte(updates.createdAt, sevenDaysAgo),
         ),
       )
@@ -106,8 +106,8 @@ export async function getTeamAnalytics(teamId: string) {
 
     db
       .select({ count: count() })
-      .from(teamMembers)
-      .where(eq(teamMembers.teamId, teamId)),
+      .from(organizationMembers)
+      .where(eq(organizationMembers.organizationId, organizationId)),
   ]);
 
   const dayLabels = [];

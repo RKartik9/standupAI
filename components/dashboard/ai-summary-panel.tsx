@@ -9,7 +9,7 @@ import { generateSummary } from "@/lib/actions/ai";
 import type { AISummary } from "@/lib/db/schema";
 
 interface AISummaryPanelProps {
-  teamId: string;
+  organizationId: string;
   summary: AISummary | null;
 }
 
@@ -47,7 +47,7 @@ const insightBg = {
   success: "var(--green-surface)",
 };
 
-export function AISummaryPanel({ teamId, summary }: AISummaryPanelProps) {
+export function AISummaryPanel({ organizationId, summary }: AISummaryPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentSummary, setCurrentSummary] = useState<AISummary | null>(
     summary,
@@ -60,7 +60,7 @@ export function AISummaryPanel({ teamId, summary }: AISummaryPanelProps) {
     setIsGenerating(true);
     setError(null);
     try {
-      const result = await generateSummary(teamId);
+      const result = await generateSummary(organizationId);
       if ("error" in result) {
         setError(result.error as string);
       } else if (result.data) {

@@ -1,19 +1,20 @@
 "use server";
 
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { updates, teamMembers } from "@/lib/db/schema";
+import { updates } from "@/lib/db/schema";
 import { eq, and, desc, gte } from "drizzle-orm";
 import { createUpdateSchema } from "@/lib/validations/updates";
 import { revalidatePath } from "next/cache";
 import { getPusher } from "@/lib/pusher/server";
+import { requireOrgMember, requireUser } from "./org-auth";
 
 export async function createUpdate(
-  teamId: string,
+  organizationId: string,
   formData: { did: string; willDo: string; blockers?: string },
 ) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const userId = await requireUser();
+  await requireOrgMember(organizationId, userId);
 
   const user = await currentUser();
   if (!user) throw new Error("User not found");
@@ -23,19 +24,10 @@ export async function createUpdate(
     return { error: parsed.error.flatten().fieldErrors };
   }
 
-  const membership = await db
-    .select()
-    .from(teamMembers)
-    .where(
-      and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, userId)),
-    );
-
-  if (membership.length === 0) throw new Error("Not a member of this team");
-
   const [update] = await db
     .insert(updates)
     .values({
-      teamId,
+      organizationId,
       userId,
       userName:
         `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
@@ -47,15 +39,15 @@ export async function createUpdate(
     })
     .returning();
 
-  await getPusher().trigger(`team-${teamId}`, "new-update", update);
+  await getPusher().trigger(`org-${organizationId}`, "new-update", update);
 
   revalidatePath("/dashboard");
   return { data: update };
 }
 
-export async function getTodayUpdates(teamId: string) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+export async function getTodayUpdates(organizationId: string) {
+  const userId = await requireUser();
+  await requireOrgMember(organizationId, userId);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -63,18 +55,23 @@ export async function getTodayUpdates(teamId: string) {
   return db
     .select()
     .from(updates)
-    .where(and(eq(updates.teamId, teamId), gte(updates.createdAt, today)))
+    .where(
+      and(
+        eq(updates.organizationId, organizationId),
+        gte(updates.createdAt, today),
+      ),
+    )
     .orderBy(desc(updates.createdAt));
 }
 
-export async function getRecentUpdates(teamId: string, limit = 20) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+export async function getRecentUpdates(organizationId: string, limit = 20) {
+  const userId = await requireUser();
+  await requireOrgMember(organizationId, userId);
 
   return db
     .select()
     .from(updates)
-    .where(eq(updates.teamId, teamId))
+    .where(eq(updates.organizationId, organizationId))
     .orderBy(desc(updates.createdAt))
     .limit(limit);
 }

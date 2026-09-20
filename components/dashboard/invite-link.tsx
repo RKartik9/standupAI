@@ -6,10 +6,10 @@ import { Link2, Check, Copy } from "lucide-react";
 import { createInviteLink } from "@/lib/actions/invites";
 
 interface InviteLinkProps {
-  teamId: string;
+  organizationId: string;
 }
 
-export function InviteLink({ teamId }: InviteLinkProps) {
+export function InviteLink({ organizationId }: InviteLinkProps) {
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -17,7 +17,7 @@ export function InviteLink({ teamId }: InviteLinkProps) {
   const handleGenerate = async () => {
     setLoading(true);
     try {
-      const invite = await createInviteLink(teamId);
+      const invite = await createInviteLink(organizationId);
       const url = `${window.location.origin}/dashboard/join?code=${invite.code}`;
       setInviteUrl(url);
     } finally {
@@ -52,7 +52,7 @@ export function InviteLink({ teamId }: InviteLinkProps) {
   return (
     <Button variant="outline" onClick={handleGenerate} disabled={loading}>
       <Link2 className="mr-2 h-4 w-4" />
-      {loading ? "Generating..." : "Invite Link"}
+      {loading ? "Generating..." : "Invite People"}
     </Button>
   );
 }

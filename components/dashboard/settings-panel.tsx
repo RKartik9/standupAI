@@ -7,20 +7,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { updateTeamName, leaveTeam } from "@/lib/actions/teams";
+import {
+  leaveOrganization,
+  updateOrganizationName,
+} from "@/lib/actions/organizations";
+import type { SerializedCalendar } from "@/lib/scheduling/org-calendar";
+import {
+  WorkingCalendarSettings,
+  type HolidayRow,
+} from "./working-calendar-settings";
 
 interface SettingsPanelProps {
-  teamId: string;
-  teamName: string;
+  organizationId: string;
+  organizationName: string;
   isAdmin: boolean;
+  calendar: SerializedCalendar;
+  holidays: HolidayRow[];
 }
 
 export function SettingsPanel({
-  teamId,
-  teamName,
+  organizationId,
+  organizationName,
   isAdmin,
+  calendar,
+  holidays,
 }: SettingsPanelProps) {
-  const [name, setName] = useState(teamName);
+  const [name, setName] = useState(organizationName);
   const [saving, setSaving] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -32,12 +44,13 @@ export function SettingsPanel({
     setMessage(null);
     setError(null);
     try {
-      const result = await updateTeamName(teamId, name);
+      const result = await updateOrganizationName(organizationId, name);
       if (result.error) {
-        setError("Failed to update team name");
+        setError("Failed to update workspace name");
       } else {
-        setMessage("Team name updated");
+        setMessage("Workspace name updated");
         setTimeout(() => setMessage(null), 3000);
+        router.refresh();
       }
     } catch {
       setError("Something went wrong");
@@ -47,11 +60,11 @@ export function SettingsPanel({
   };
 
   const handleLeave = async () => {
-    if (!confirm("Are you sure you want to leave this team?")) return;
+    if (!confirm("Are you sure you want to leave this workspace?")) return;
     setLeaving(true);
     setError(null);
     try {
-      const result = await leaveTeam(teamId);
+      const result = await leaveOrganization(organizationId);
       if (result.error) {
         setError(result.error);
       } else {
@@ -69,28 +82,36 @@ export function SettingsPanel({
       {isAdmin && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Team Name</CardTitle>
+            <CardTitle className="text-base">Workspace Name</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="teamName">Name</Label>
+              <Label htmlFor="orgName">Name</Label>
               <Input
-                id="teamName"
+                id="orgName"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
             <div className="flex items-center gap-3">
-              <Button onClick={handleSave} disabled={saving || name === teamName}>
+              <Button
+                onClick={handleSave}
+                disabled={saving || name === organizationName}
+              >
                 {saving ? "Saving..." : "Save"}
               </Button>
-              {message && (
-                <p className="text-sm text-green-600">{message}</p>
-              )}
+              {message && <p className="text-sm text-green-600">{message}</p>}
             </div>
           </CardContent>
         </Card>
       )}
+
+      <WorkingCalendarSettings
+        organizationId={organizationId}
+        calendar={calendar}
+        holidays={holidays}
+        isAdmin={isAdmin}
+      />
 
       <Card>
         <CardHeader>
@@ -100,22 +121,16 @@ export function SettingsPanel({
           <Separator />
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium">Leave Team</p>
+              <p className="text-sm font-medium">Leave Workspace</p>
               <p className="text-xs text-muted-foreground">
-                You will lose access to this team's updates and data
+                You will lose access to this workspace&apos;s projects and updates
               </p>
             </div>
-            <Button
-              variant="destructive"
-              onClick={handleLeave}
-              disabled={leaving}
-            >
-              {leaving ? "Leaving..." : "Leave Team"}
+            <Button variant="destructive" onClick={handleLeave} disabled={leaving}>
+              {leaving ? "Leaving..." : "Leave Workspace"}
             </Button>
           </div>
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </CardContent>
       </Card>
     </div>

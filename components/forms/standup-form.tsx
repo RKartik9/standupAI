@@ -14,10 +14,10 @@ import {
 } from "@/lib/validations/updates";
 
 interface StandupFormProps {
-  teamId: string;
+  organizationId: string;
 }
 
-export function StandupForm({ teamId }: StandupFormProps) {
+export function StandupForm({ organizationId }: StandupFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
 
@@ -34,7 +34,7 @@ export function StandupForm({ teamId }: StandupFormProps) {
     setIsSubmitting(true);
     setSubmitMessage(null);
     try {
-      const result = await createUpdate(teamId, data);
+      const result = await createUpdate(organizationId, data);
       if (result.error) {
         setSubmitMessage("Failed to post update. Please try again.");
         return;

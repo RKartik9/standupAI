@@ -8,14 +8,14 @@ import { StandupForm } from "@/components/forms/standup-form";
 import { UpdatesFeed } from "@/components/dashboard/updates-feed";
 import { getTodayUpdates } from "@/lib/actions/updates";
 import { getLatestSummary } from "@/lib/actions/ai";
-import { getTeamAnalytics } from "@/lib/actions/analytics";
+import { getOrgAnalytics } from "@/lib/actions/analytics";
 import { syncUser } from "@/lib/actions/users";
-import { resolveActiveTeam } from "@/lib/actions/resolve-team";
+import { resolveActiveOrg } from "@/lib/actions/resolve-org";
 import { TeamSetup } from "@/components/dashboard/team-setup";
 import { TeamPulse } from "@/components/dashboard/team-pulse";
 
 export default async function DashboardPage(props: {
-  searchParams: Promise<{ teamId?: string }>;
+  searchParams: Promise<{ orgId?: string }>;
 }) {
   await connection();
   const { userId } = await auth();
@@ -24,13 +24,11 @@ export default async function DashboardPage(props: {
   await syncUser();
 
   const searchParams = await props.searchParams;
-  const { userTeams, activeTeam } = await resolveActiveTeam(
-    searchParams.teamId,
-  );
+  const { userOrgs, activeOrg } = await resolveActiveOrg(searchParams.orgId);
 
-  if (!activeTeam) {
+  if (!activeOrg) {
     return (
-      <AppShell sidebar={<Sidebar teams={[]} activeTeamId={null} />}>
+      <AppShell sidebar={<Sidebar orgs={[]} activeOrgId={null} />}>
         <div className="flex flex-1 items-center justify-center px-4">
           <TeamSetup />
         </div>
@@ -38,26 +36,21 @@ export default async function DashboardPage(props: {
     );
   }
 
+  const orgId = activeOrg.organizationId;
   const [todayUpdates, latestSummary, analytics] = await Promise.all([
-    getTodayUpdates(activeTeam.teamId),
-    getLatestSummary(activeTeam.teamId),
-    getTeamAnalytics(activeTeam.teamId),
+    getTodayUpdates(orgId),
+    getLatestSummary(orgId),
+    getOrgAnalytics(orgId),
   ]);
 
   return (
     <AppShell
-      sidebar={
-        <Sidebar teams={userTeams} activeTeamId={activeTeam.teamId} />
-      }
+      sidebar={<Sidebar orgs={userOrgs} activeOrgId={orgId} />}
       rightPanel={
-        <AISummaryPanel
-          teamId={activeTeam.teamId}
-          summary={latestSummary}
-        />
+        <AISummaryPanel organizationId={orgId} summary={latestSummary} />
       }
     >
       <div className="container mx-auto max-w-4xl space-y-8 px-4 py-8">
-        {/* Team Pulse */}
         <TeamPulse stats={analytics.stats} />
 
         <div>
@@ -79,14 +72,14 @@ export default async function DashboardPage(props: {
               marginTop: "4px",
             }}
           >
-            Share what you've been working on with your team
+            Share what you&apos;ve been working on with {activeOrg.name}
           </p>
         </div>
 
-        <StandupForm teamId={activeTeam.teamId} />
+        <StandupForm organizationId={orgId} />
 
         <div className="pt-8">
-          <UpdatesFeed updates={todayUpdates} teamId={activeTeam.teamId} />
+          <UpdatesFeed updates={todayUpdates} organizationId={orgId} />
         </div>
       </div>
     </AppShell>

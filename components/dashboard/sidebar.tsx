@@ -1,6 +1,14 @@
 "use client";
 
-import { Home, Users, Settings, ChevronDown, Check, BarChart3 } from "lucide-react";
+import {
+  Home,
+  Users,
+  Settings,
+  ChevronDown,
+  Check,
+  BarChart3,
+  FolderKanban,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -8,40 +16,45 @@ import { UserButton } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 
-interface TeamInfo {
-  teamId: string;
-  teamName: string;
+export interface OrgInfo {
+  organizationId: string;
+  name: string;
   role: string;
 }
 
 interface SidebarProps {
-  teams: TeamInfo[];
-  activeTeamId: string | null;
+  orgs: OrgInfo[];
+  activeOrgId: string | null;
 }
 
 const navigation = [
-  { name: "Home", href: "/dashboard", icon: Home },
+  { name: "Home", href: "/dashboard", icon: Home, exact: true },
+  { name: "Projects", href: "/dashboard/projects", icon: FolderKanban },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { name: "Team", href: "/dashboard/team", icon: Users },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-export function Sidebar({ teams, activeTeamId }: SidebarProps) {
+export function Sidebar({ orgs, activeOrgId }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectorOpen, setSelectorOpen] = useState(false);
-  const activeTeam = teams.find((t) => t.teamId === activeTeamId);
+  const activeOrg = orgs.find((o) => o.organizationId === activeOrgId);
 
-  const switchTeam = (teamId: string) => {
+  const switchOrg = (organizationId: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("teamId", teamId);
-    router.push(`${pathname}?${params.toString()}`);
+    params.set("orgId", organizationId);
+    // Project detail pages belong to one org; fall back to the list.
+    const base = pathname.startsWith("/dashboard/projects/")
+      ? "/dashboard/projects"
+      : pathname;
+    router.push(`${base}?${params.toString()}`);
     setSelectorOpen(false);
   };
 
   const buildHref = (base: string) => {
-    if (activeTeamId) return `${base}?teamId=${activeTeamId}`;
+    if (activeOrgId) return `${base}?orgId=${activeOrgId}`;
     return base;
   };
 
@@ -82,8 +95,8 @@ export function Sidebar({ teams, activeTeamId }: SidebarProps) {
 
       <Separator className="mb-4" />
 
-      {/* Team Selector */}
-      {teams.length > 0 && (
+      {/* Workspace selector */}
+      {orgs.length > 0 && (
         <div className="relative mb-6 px-3">
           <button
             onClick={() => setSelectorOpen(!selectorOpen)}
@@ -100,7 +113,7 @@ export function Sidebar({ teams, activeTeamId }: SidebarProps) {
                     color: "var(--text-primary)",
                   }}
                 >
-                  {activeTeam?.teamName ?? "Select team"}
+                  {activeOrg?.name ?? "Select workspace"}
                 </p>
                 <p
                   style={{
@@ -111,10 +124,10 @@ export function Sidebar({ teams, activeTeamId }: SidebarProps) {
                     textTransform: "capitalize",
                   }}
                 >
-                  {activeTeam?.role ?? ""}
+                  {activeOrg?.role ?? ""}
                 </p>
               </div>
-              {teams.length > 1 && (
+              {orgs.length > 1 && (
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 transition-transform",
@@ -126,15 +139,15 @@ export function Sidebar({ teams, activeTeamId }: SidebarProps) {
             </div>
           </button>
 
-          {selectorOpen && teams.length > 1 && (
+          {selectorOpen && orgs.length > 1 && (
             <div
               className="absolute left-3 right-3 top-full z-10 mt-1 rounded-lg border shadow-lg"
               style={{ background: "var(--surface)" }}
             >
-              {teams.map((team) => (
+              {orgs.map((org) => (
                 <button
-                  key={team.teamId}
-                  onClick={() => switchTeam(team.teamId)}
+                  key={org.organizationId}
+                  onClick={() => switchOrg(org.organizationId)}
                   className="flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors first:rounded-t-lg last:rounded-b-lg hover:bg-[var(--surface-2)]"
                   style={{
                     fontFamily: "var(--font-body)",
@@ -146,7 +159,7 @@ export function Sidebar({ teams, activeTeamId }: SidebarProps) {
                   }}
                 >
                   <div>
-                    <p style={{ fontWeight: 500 }}>{team.teamName}</p>
+                    <p style={{ fontWeight: 500 }}>{org.name}</p>
                     <p
                       style={{
                         fontSize: "11px",
@@ -154,10 +167,10 @@ export function Sidebar({ teams, activeTeamId }: SidebarProps) {
                         textTransform: "capitalize",
                       }}
                     >
-                      {team.role}
+                      {org.role}
                     </p>
                   </div>
-                  {team.teamId === activeTeamId && (
+                  {org.organizationId === activeOrgId && (
                     <Check className="h-4 w-4" style={{ color: "var(--green)" }} />
                   )}
                 </button>
@@ -170,7 +183,9 @@ export function Sidebar({ teams, activeTeamId }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 space-y-1">
         {navigation.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = item.exact
+            ? pathname === item.href
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link
               key={item.name}

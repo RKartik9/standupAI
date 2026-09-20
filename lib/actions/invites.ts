@@ -1,57 +1,43 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { invites, teamMembers, teams } from "@/lib/db/schema";
+import { invites, organizationMembers, organizations } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "crypto";
+import { requireOrgAdmin, requireUser } from "./org-auth";
 
 function generateCode() {
   return randomBytes(6).toString("base64url").slice(0, 10);
 }
 
-export async function createInviteLink(teamId: string) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const membership = await db
-    .select()
-    .from(teamMembers)
-    .where(
-      and(
-        eq(teamMembers.teamId, teamId),
-        eq(teamMembers.userId, userId),
-        eq(teamMembers.role, "admin"),
-      ),
-    );
-
-  if (membership.length === 0) throw new Error("Only admins can create invites");
+export async function createInviteLink(organizationId: string) {
+  const userId = await requireUser();
+  await requireOrgAdmin(organizationId, userId);
 
   const code = generateCode();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   const [invite] = await db
     .insert(invites)
-    .values({ teamId, code, createdBy: userId, expiresAt })
+    .values({ organizationId, code, createdBy: userId, expiresAt })
     .returning();
 
   return invite;
 }
 
-export async function getTeamInvites(teamId: string) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+export async function getOrganizationInvites(organizationId: string) {
+  const userId = await requireUser();
+  await requireOrgAdmin(organizationId, userId);
 
   return db
     .select()
     .from(invites)
-    .where(eq(invites.teamId, teamId));
+    .where(eq(invites.organizationId, organizationId));
 }
 
-export async function joinTeamByCode(code: string) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+export async function joinOrganizationByCode(code: string) {
+  const userId = await requireUser();
 
   const [invite] = await db
     .select()
@@ -65,26 +51,36 @@ export async function joinTeamByCode(code: string) {
     return { error: "This invite has expired" };
   }
 
+  const [org] = await db
+    .select({ licenseStatus: organizations.licenseStatus })
+    .from(organizations)
+    .where(eq(organizations.id, invite.organizationId))
+    .limit(1);
+  if (!org) return { error: "This workspace no longer exists" };
+  if (org.licenseStatus !== "active") {
+    return { error: "This workspace's license is not active" };
+  }
+
   const existing = await db
     .select()
-    .from(teamMembers)
+    .from(organizationMembers)
     .where(
       and(
-        eq(teamMembers.teamId, invite.teamId),
-        eq(teamMembers.userId, userId),
+        eq(organizationMembers.organizationId, invite.organizationId),
+        eq(organizationMembers.userId, userId),
       ),
     );
 
   if (existing.length > 0) {
-    return { error: "You are already a member of this team" };
+    return { error: "You are already a member of this workspace" };
   }
 
-  await db.insert(teamMembers).values({
-    teamId: invite.teamId,
+  await db.insert(organizationMembers).values({
+    organizationId: invite.organizationId,
     userId,
     role: "member",
   });
 
   revalidatePath("/dashboard");
-  return { data: { teamId: invite.teamId } };
+  return { data: { organizationId: invite.organizationId } };
 }

@@ -8,10 +8,10 @@ import type { Update } from "@/lib/db/schema";
 
 interface UpdatesFeedProps {
   updates: Update[];
-  teamId: string;
+  organizationId: string;
 }
 
-export function UpdatesFeed({ updates: initial, teamId }: UpdatesFeedProps) {
+export function UpdatesFeed({ updates: initial, organizationId }: UpdatesFeedProps) {
   const [updates, setUpdates] = useState<Update[]>(initial);
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export function UpdatesFeed({ updates: initial, teamId }: UpdatesFeedProps) {
 
   useEffect(() => {
     const pusher = getPusherClient();
-    const channel = pusher.subscribe(`team-${teamId}`);
+    const channel = pusher.subscribe(`org-${organizationId}`);
 
     channel.bind("new-update", (data: Update) => {
       setUpdates((prev) => {
@@ -31,9 +31,9 @@ export function UpdatesFeed({ updates: initial, teamId }: UpdatesFeedProps) {
 
     return () => {
       channel.unbind_all();
-      pusher.unsubscribe(`team-${teamId}`);
+      pusher.unsubscribe(`org-${organizationId}`);
     };
-  }, [teamId]);
+  }, [organizationId]);
 
   return (
     <div className="space-y-4">
